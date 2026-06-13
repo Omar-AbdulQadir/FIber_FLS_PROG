@@ -1,0 +1,17 @@
+../Drivers/App_Drivers/FLS/w25qxx.c:51:13:W25qxx_Spi	2088	static
+../Drivers/App_Drivers/FLS/w25qxx.c:75:6:W25qxx_Init	24	static
+../Drivers/App_Drivers/FLS/w25qxx.c:116:6:W25qxx_ReadUniqID	24	static
+../Drivers/App_Drivers/FLS/w25qxx.c:130:6:W25qxx_WriteEnable	16	static
+../Drivers/App_Drivers/FLS/w25qxx.c:150:6:W25qxx_WriteDisable	16	static
+../Drivers/App_Drivers/FLS/w25qxx.c:170:6:W25qxx_WaitForWriteEnd	16	static
+../Drivers/App_Drivers/FLS/w25qxx.c:189:6:W25qxx_ReadStatusRegister	24	static
+../Drivers/App_Drivers/FLS/w25qxx.c:247:6:W25qxx_WriteStatusRegister	24	static
+../Drivers/App_Drivers/FLS/w25qxx.c:303:6:W25qxx_EraseSector	24	static
+../Drivers/App_Drivers/FLS/w25qxx.c:334:6:W25qxx_EraseBlock	24	static
+../Drivers/App_Drivers/FLS/w25qxx.c:364:6:W25qxx_EraseChip	16	static
+../Drivers/App_Drivers/FLS/w25qxx.c:594:6:W25qxx_WriteBytes	288	static
+../Drivers/App_Drivers/FLS/w25qxx.c:624:6:W25qxx_WritePage	16	static
+../Drivers/App_Drivers/FLS/w25qxx.c:638:6:W25qxx_WriteSector	24	static
+../Drivers/App_Drivers/FLS/w25qxx.c:656:6:W25qxx_ReadBytes	2080	static
+../Drivers/App_Drivers/FLS/w25qxx.c:681:6:W25qxx_ReadPage	16	static
+../Drivers/App_Drivers/FLS/w25qxx.c:695:6:W25qxx_ReadSector	24	static
