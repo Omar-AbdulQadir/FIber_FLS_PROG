@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(arm-none-eabi-gcc --version)",
+      "Bash(gcc -fsyntax-only -I_MiddleWare_/Services -Wall -Wextra _MiddleWare_/Services/transport/transport.c)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(rm -rf /tmp/fls_stub)"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
+    ]
+  }
+}

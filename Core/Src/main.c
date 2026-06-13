@@ -24,6 +24,9 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "FLS/w25qxx.h"
+#include "flash_wrapper/flash_wrapper.h"
+#include "transport/transport.h"
+#include "protocol/protocol.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -89,7 +92,9 @@ int main(void)
   MX_GPIO_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-  W25qxx_Init(&hspi1, FLS_CS_GPIO_Port, FLS_CS_Pin);
+  FW_Init();
+  Transport_Init();
+  Protocol_Init();
 
   /* USER CODE END 2 */
 
@@ -98,7 +103,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
+    Protocol_Process();
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */

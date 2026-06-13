@@ -25,5 +25,12 @@ SUBDIRS := \
 Core/Src \
 Core/Startup \
 Drivers/App_Drivers/FLS \
+Drivers/App_Drivers/W5500_if \
 Drivers/STM32F4xx_HAL_Driver/Src \
+_MiddleWare_/Services/command \
+_MiddleWare_/Services/flash_wrapper \
+_MiddleWare_/Services/protocol \
+_MiddleWare_/Services/transport \
+_MiddleWare_/Thirdparty/W5500/W5500 \
+_MiddleWare_/Thirdparty/W5500 \
 
