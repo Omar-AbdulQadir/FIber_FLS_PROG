@@ -25,7 +25,7 @@ void FW_Init(void)
 {
     /* The W25Qxx driver is initialized in main() via W25qxx_Init().
      * Nothing extra to do here yet; kept as a seam for future setup. */
-    W25qxx_Init(&hspi1, FLS_CS_GPIO_Port, FLS_CS_Pin);
+    W25qxx_Init(&hspi3, FLS_CS_GPIO_Port, FLS_CS_Pin);
 }
 
 uint32_t FW_CapacityBytes(void)

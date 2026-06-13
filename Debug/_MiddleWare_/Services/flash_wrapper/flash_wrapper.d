@@ -2,7 +2,6 @@ _MiddleWare_/Services/flash_wrapper/flash_wrapper.o: \
  ../_MiddleWare_/Services/flash_wrapper/flash_wrapper.c \
  ../_MiddleWare_/Services/flash_wrapper/flash_wrapper.h \
  D:/Test_Jig/FIber_FLS_PROG/Drivers/App_Drivers/FLS/w25qxx.h \
- ../Core/Inc/spi.h ../Core/Inc/main.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h \
  ../Core/Inc/stm32f4xx_hal_conf.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h \
@@ -29,11 +28,9 @@ _MiddleWare_/Services/flash_wrapper/flash_wrapper.o: \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_spi.h \
- ../Core/Inc/main.h
+ ../Core/Inc/spi.h ../Core/Inc/main.h ../Core/Inc/main.h
 ../_MiddleWare_/Services/flash_wrapper/flash_wrapper.h:
 D:/Test_Jig/FIber_FLS_PROG/Drivers/App_Drivers/FLS/w25qxx.h:
-../Core/Inc/spi.h:
-../Core/Inc/main.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
 ../Core/Inc/stm32f4xx_hal_conf.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:
@@ -60,4 +57,6 @@ D:/Test_Jig/FIber_FLS_PROG/Drivers/App_Drivers/FLS/w25qxx.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_pwr_ex.h:
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_spi.h:
+../Core/Inc/spi.h:
+../Core/Inc/main.h:
 ../Core/Inc/main.h:

@@ -40,17 +40,44 @@ void MX_GPIO_Init(void)
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(FLS_CS_GPIO_Port, FLS_CS_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOA, ETH_CS_Pin|FLS_CS_Pin, GPIO_PIN_SET);
 
-  /*Configure GPIO pin : FLS_CS_Pin */
-  GPIO_InitStruct.Pin = FLS_CS_Pin;
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(ETH_RST_GPIO_Port, ETH_RST_Pin, GPIO_PIN_SET);
+
+  /*Configure GPIO pins : IP_SEL_0_Pin IP_SEL_1_Pin IP_SEL_2_Pin */
+  GPIO_InitStruct.Pin = IP_SEL_0_Pin|IP_SEL_1_Pin|IP_SEL_2_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : ETH_CS_Pin FLS_CS_Pin */
+  GPIO_InitStruct.Pin = ETH_CS_Pin|FLS_CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  HAL_GPIO_Init(FLS_CS_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : ETH_RST_Pin */
+  GPIO_InitStruct.Pin = ETH_RST_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(ETH_RST_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : ETH_INT_Pin */
+  GPIO_InitStruct.Pin = ETH_INT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(ETH_INT_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
 }
 

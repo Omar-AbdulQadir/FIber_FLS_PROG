@@ -28,9 +28,9 @@
 #include "main.h"
 
 /* WIZnet ioLibrary + low-level SPI shim. */
-#include "wizchip_conf.h"
-#include "socket.h"
-#include "W5500_if.h"
+#include "W5500/wizchip_conf.h"
+#include "W5500/socket.h"
+#include "W5500_if/W5500_if.h"
 
 /* ------------------------------------------------------------------------- */
 /* Configuration                                                             */
@@ -44,19 +44,10 @@
 #define TP_LISTEN_PORT      5000U       /* TCP port the jig listens on */
 
 #define TP_MAC_ADDR         { 0x00, 0x08, 0xDC, 0x01, 0x02, 0x03 }
-#define TP_IP_ADDR          { 192, 168, 1, 50 }
+#define TP_DEVICE_ID        (HAL_GPIO_ReadPin(IP_SEL_0_GPIO_Port, IP_SEL_0_Pin) | HAL_GPIO_ReadPin(IP_SEL_1_GPIO_Port, IP_SEL_1_Pin) << 1U | HAL_GPIO_ReadPin(IP_SEL_2_GPIO_Port, IP_SEL_2_Pin) << 2U)
+#define TP_IP_ADDR          { 192, 168, 1, 100 + TP_DEVICE_ID }
 #define TP_SUBNET           { 255, 255, 255, 0 }
 #define TP_GATEWAY          { 192, 168, 1, 1 }
-
-/* --- DUMMY hardware routing -------------------------------------------------
- * The W5500's SPI bus and CS/NRST GPIOs are NOT configured in CubeMX yet.
- * These placeholders let W5500_init() be called now; replace with the real
- * SPI handle and pins once the peripheral is added to the .ioc.            */
-static SPI_HandleTypeDef tp_dummy_spi;          /* TODO: use the real W5500 SPI handle */
-#define TP_DUMMY_GPIO_PORT   GPIOA              /* TODO: real CS/NRST/INT port */
-#define TP_DUMMY_CS_PIN      GPIO_PIN_3         /* TODO: real CS pin  */
-#define TP_DUMMY_NRST_PIN    GPIO_PIN_2         /* TODO: real NRST pin */
-#define TP_DUMMY_INT_PIN     GPIO_PIN_1         /* TODO: real INT pin  */
 
 /* ------------------------------------------------------------------------- */
 /* Internal RX ring buffer (kept; the protocol layer consumes from here)     */
@@ -89,22 +80,6 @@ static void tp_rx_push(uint8_t b)
 }
 
 /* ------------------------------------------------------------------------- */
-/* WIZnet callback glue (delegates to the W5500_if SPI shim)                 */
-/* ------------------------------------------------------------------------- */
-
-/* Critical-section enter/exit: no RTOS, single-threaded poll loop -> no-ops.
- * If the W5500 is ever accessed from an ISR, disable/restore IRQs here. */
-static void tp_cris_enter(void) { }
-static void tp_cris_exit(void)  { }
-
-static void    tp_cs_select(void)                        { W5500_select();        }
-static void    tp_cs_deselect(void)                      { W5500_deselect();      }
-static uint8_t tp_spi_readbyte(void)                     { return W5500_read_byte(); }
-static void    tp_spi_writebyte(uint8_t b)               { W5500_write_byte(b);   }
-static void    tp_spi_readburst(uint8_t *p, uint16_t n)  { W5500_read_brust(p, n);  }
-static void    tp_spi_writeburst(uint8_t *p, uint16_t n) { W5500_write_brust(p, n); }
-
-/* ------------------------------------------------------------------------- */
 /* Lifecycle                                                                 */
 /* ------------------------------------------------------------------------- */
 
@@ -119,22 +94,21 @@ void Transport_Init(void)
     /* Configure the W5500 port (SPI handle + CS/NRST/INT GPIOs) and pulse
      * reset. DUMMY values for now — see the placeholders above. */
     W5500_port_t port;
-    port.w5500_spi_handler = &tp_dummy_spi;
-    port.w5500_spi_cs_port = TP_DUMMY_GPIO_PORT;
-    port.w5500_spi_cs_pin  = TP_DUMMY_CS_PIN;
-    port.w5500_nrst_port   = TP_DUMMY_GPIO_PORT;
-    port.w5500_nrst_pin    = TP_DUMMY_NRST_PIN;
-    port.w5500_int_port    = TP_DUMMY_GPIO_PORT;
-    port.w5500_int_pin     = TP_DUMMY_INT_PIN;
-    port.w5500_irq         = EXTI0_IRQn;            /* TODO: real INT IRQ line */
-    (void)W5500_init(TP_W5500_PORT_ID, &port);
+    port.w5500_spi_handler = &hspi1;
+    port.w5500_spi_cs_port = ETH_CS_GPIO_Port;
+    port.w5500_spi_cs_pin  = ETH_CS_Pin;
+    port.w5500_nrst_port   = ETH_RST_GPIO_Port;
+    port.w5500_nrst_pin    = ETH_RST_Pin;
+    port.w5500_int_port    = ETH_INT_GPIO_Port;
+    port.w5500_int_pin     = ETH_INT_Pin;
+    port.w5500_irq         = ETH_INT_EXTI_IRQn;
+    W5500_init(TP_W5500_PORT_ID, &port);
     W5500_select_port(TP_W5500_PORT_ID);
 
     /* Register the chip-access callbacks with the ioLibrary. */
-    reg_wizchip_cris_cbfunc(tp_cris_enter, tp_cris_exit);
-    reg_wizchip_cs_cbfunc(tp_cs_select, tp_cs_deselect);
-    reg_wizchip_spi_cbfunc(tp_spi_readbyte, tp_spi_writebyte);
-    reg_wizchip_spiburst_cbfunc(tp_spi_readburst, tp_spi_writeburst);
+    reg_wizchip_cs_cbfunc(W5500_select, W5500_deselect);
+    reg_wizchip_spi_cbfunc(W5500_read_byte, W5500_write_byte);
+    reg_wizchip_spiburst_cbfunc(W5500_read_brust, W5500_write_brust);
 
     /* Bring up the chip with default 2KB/2KB per-socket buffers (8 sockets). */
     uint8_t txsize[8] = { 2, 2, 2, 2, 2, 2, 2, 2 };

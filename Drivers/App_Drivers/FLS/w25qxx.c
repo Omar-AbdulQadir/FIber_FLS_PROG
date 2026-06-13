@@ -19,7 +19,6 @@
   First release.
 */
 
-#include "string.h"
 #include "main.h"
 #include "w25qxx.h"
 #include "w25qxxConf.h"

@@ -27,6 +27,7 @@
 #endif
 
 #include "stdbool.h"
+#include "stm32f4xx_hal.h"
 
 #define security_registerAddr		0x001000
 

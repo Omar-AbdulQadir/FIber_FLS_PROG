@@ -1,0 +1,9 @@
+../_MiddleWare_/Thirdparty/W5500/W5500/w5500.c:64:10:WIZCHIP_READ	3
+../_MiddleWare_/Thirdparty/W5500/W5500/w5500.c:94:10:WIZCHIP_WRITE	2
+../_MiddleWare_/Thirdparty/W5500/W5500/w5500.c:124:10:WIZCHIP_READ_BUF	4
+../_MiddleWare_/Thirdparty/W5500/W5500/w5500.c:155:10:WIZCHIP_WRITE_BUF	3
+../_MiddleWare_/Thirdparty/W5500/W5500/w5500.c:187:10:getSn_TX_FSR	3
+../_MiddleWare_/Thirdparty/W5500/W5500/w5500.c:205:10:getSn_RX_RSR	3
+../_MiddleWare_/Thirdparty/W5500/W5500/w5500.c:222:6:wiz_send_data	2
+../_MiddleWare_/Thirdparty/W5500/W5500/w5500.c:239:6:wiz_recv_data	2
+../_MiddleWare_/Thirdparty/W5500/W5500/w5500.c:257:6:wiz_recv_ignore	1

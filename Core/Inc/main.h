@@ -57,7 +57,20 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define FLS_CS_Pin GPIO_PIN_4
+#define IP_SEL_0_Pin GPIO_PIN_0
+#define IP_SEL_0_GPIO_Port GPIOC
+#define IP_SEL_1_Pin GPIO_PIN_1
+#define IP_SEL_1_GPIO_Port GPIOC
+#define IP_SEL_2_Pin GPIO_PIN_2
+#define IP_SEL_2_GPIO_Port GPIOC
+#define ETH_CS_Pin GPIO_PIN_4
+#define ETH_CS_GPIO_Port GPIOA
+#define ETH_RST_Pin GPIO_PIN_4
+#define ETH_RST_GPIO_Port GPIOC
+#define ETH_INT_Pin GPIO_PIN_5
+#define ETH_INT_GPIO_Port GPIOC
+#define ETH_INT_EXTI_IRQn EXTI9_5_IRQn
+#define FLS_CS_Pin GPIO_PIN_15
 #define FLS_CS_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */

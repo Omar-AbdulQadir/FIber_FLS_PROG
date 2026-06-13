@@ -1,0 +1,9 @@
+../Drivers/App_Drivers/W5500_if/W5500_if.c:20:8:W5500_init	3
+../Drivers/App_Drivers/W5500_if/W5500_if.c:35:6:W5500_select_port	2
+../Drivers/App_Drivers/W5500_if/W5500_if.c:41:6:W5500_select	1
+../Drivers/App_Drivers/W5500_if/W5500_if.c:46:6:W5500_deselect	1
+../Drivers/App_Drivers/W5500_if/W5500_if.c:51:9:W5500_read_byte	1
+../Drivers/App_Drivers/W5500_if/W5500_if.c:58:6:W5500_write_byte	1
+../Drivers/App_Drivers/W5500_if/W5500_if.c:63:6:W5500_read_brust	1
+../Drivers/App_Drivers/W5500_if/W5500_if.c:68:6:W5500_write_brust	1
+../Drivers/App_Drivers/W5500_if/W5500_if.c:73:6:W5500_deinit	2
