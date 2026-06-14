@@ -2,7 +2,8 @@
 ../_MiddleWare_/Services/transport/transport.c:67:17:tp_rx_free	8	static
 ../_MiddleWare_/Services/transport/transport.c:72:13:tp_rx_push	24	static
 ../_MiddleWare_/Services/transport/transport.c:88:6:Transport_Init	104	static
-../_MiddleWare_/Services/transport/transport.c:142:6:Transport_Poll	88	static
-../_MiddleWare_/Services/transport/transport.c:195:10:Transport_Read	24	static
-../_MiddleWare_/Services/transport/transport.c:206:6:Transport_Write	24	static
-../_MiddleWare_/Services/transport/transport.c:216:6:Transport_RxAvailable	8	static
+../_MiddleWare_/Services/transport/transport.c:142:6:Transport_Poll	96	static
+../_MiddleWare_/Services/transport/transport.c:200:6:Transport_Reset	8	static
+../_MiddleWare_/Services/transport/transport.c:217:10:Transport_Read	24	static
+../_MiddleWare_/Services/transport/transport.c:228:6:Transport_Write	24	static
+../_MiddleWare_/Services/transport/transport.c:238:6:Transport_RxAvailable	8	static

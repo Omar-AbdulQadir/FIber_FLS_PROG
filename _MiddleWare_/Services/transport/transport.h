@@ -3,9 +3,9 @@
   * @file    transport.h
   * @brief   Transport-agnostic byte I/O interface for the command server.
   *
-  *          The physical peripheral (UART / USB CDC) is DEFERRED. The protocol
-  *          layer talks only to this interface, so the concrete peripheral can
-  *          be dropped in later (transport.c) without touching anything above.
+  *          The protocol layer talks only to this interface; the concrete
+  *          backend lives in transport.c. The current backend is W5500
+  *          Ethernet (TCP server) over SPI1, driven by polling (no IRQ).
   *
   *          Contract:
   *            - non-blocking; the server polls in the main loop
@@ -36,6 +36,11 @@ uint16_t Transport_Read(uint8_t *buf, uint16_t max);
 
 /* Queue 'len' bytes for transmission. Returns true if accepted. */
 bool     Transport_Write(const uint8_t *buf, uint16_t len);
+
+/* Force the current connection down (disconnect + close) and discard buffered
+ * RX. The next Transport_Poll() re-listens. Used to recover from a stalled
+ * mid-transfer frame. */
+void     Transport_Reset(void);
 
 /* True if at least one received byte is waiting. */
 bool     Transport_RxAvailable(void);

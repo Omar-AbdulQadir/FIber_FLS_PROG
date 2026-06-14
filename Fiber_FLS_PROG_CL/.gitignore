@@ -1,0 +1,7 @@
+# Frame logs written by tester.py each run
+tester_*.log
+*.log
+
+# Python caches
+__pycache__/
+*.pyc

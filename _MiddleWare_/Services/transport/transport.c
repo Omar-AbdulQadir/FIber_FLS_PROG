@@ -15,9 +15,9 @@
   *          The protocol layer above is unchanged: it still only calls
   *          Transport_Read/Write/Poll/RxAvailable.
   *
-  *          Network values (MAC/IP/subnet/gateway, listen port, socket/port id)
-  *          come from sys_config.h. Safe fallback defaults are provided with
-  *          #ifndef so this compiles before that header is finalized.
+  *          Network values (MAC/IP/subnet/gateway, listen port, socket id) are
+  *          defined locally as TP_* macros below. The host byte of the IP is
+  *          derived at runtime from the IP_SEL_* strap pins (TP_DEVICE_ID).
   ******************************************************************************
   */
 
@@ -91,8 +91,8 @@ void Transport_Init(void)
     tp_rx_tail = 0U;
     tp_link_up = false;
 
-    /* Configure the W5500 port (SPI handle + CS/NRST/INT GPIOs) and pulse
-     * reset. DUMMY values for now — see the placeholders above. */
+    /* Configure the W5500 port (SPI1 handle + CS/NRST/INT GPIOs) and pulse
+     * reset. INT is configured but unused — the link is polled, not IRQ-driven. */
     W5500_port_t port;
     port.w5500_spi_handler = &hspi1;
     port.w5500_spi_cs_port = ETH_CS_GPIO_Port;
@@ -148,8 +148,14 @@ void Transport_Poll(void)
     switch (st)
     {
         case SOCK_CLOSED:
-            /* (Re)open the socket as a TCP endpoint. */
-            (void)W5500_socket(TP_SOCKET, Sn_MR_TCP, TP_LISTEN_PORT, 0x00);
+            /* (Re)open the socket as a TCP endpoint, then switch it to
+             * non-blocking IO so recv/send/listen return SOCK_BUSY instead
+             * of spinning inside the library. */
+            if (W5500_socket(TP_SOCKET, Sn_MR_TCP, TP_LISTEN_PORT, 0x00) == (int8_t)TP_SOCKET)
+            {
+                uint8_t iomode = SOCK_IO_NONBLOCK;
+                (void)W5500_ctlsocket(TP_SOCKET, CS_SET_IOMODE, &iomode);
+            }
             break;
 
         case SOCK_INIT:
@@ -177,7 +183,7 @@ void Transport_Poll(void)
         }
 
         case SOCK_CLOSE_WAIT:
-            /* Peer closed: flush, then disconnect/close so we re-listen. */
+            /* Peer closed: disconnect/close so we re-open and re-listen. */
             (void)W5500_disconnect(TP_SOCKET);
             (void)W5500_close(TP_SOCKET);
             break;
@@ -186,6 +192,22 @@ void Transport_Poll(void)
             /* SOCK_LISTEN / transient states: nothing to do this tick. */
             break;
     }
+}
+
+/* Force the current connection down and discard any buffered RX. The next
+ * Transport_Poll() re-opens the socket and listens again. Called by the
+ * protocol layer when a frame stalls mid-transfer (timeout). */
+void Transport_Reset(void)
+{
+    if (!tp_link_up) return;
+
+    (void)W5500_disconnect(TP_SOCKET);
+    (void)W5500_close(TP_SOCKET);
+
+    /* Drop anything left in the ring so the stalled partial frame can't be
+     * mistaken for the start of the next connection's data. */
+    tp_rx_head = 0U;
+    tp_rx_tail = 0U;
 }
 
 /* ------------------------------------------------------------------------- */

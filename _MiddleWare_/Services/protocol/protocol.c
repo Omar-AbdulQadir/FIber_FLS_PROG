@@ -14,7 +14,14 @@
 #include "transport/transport.h"
 #include "command/command.h"
 #include "flash_wrapper/flash_wrapper.h"
+#include "main.h"            /* HAL_GetTick() */
 #include <string.h>
+
+/* Mid-transfer frame timeout: if a frame has started arriving but does not
+ * complete within this many milliseconds, the connection is reset and the
+ * partial frame discarded. Idle time between frames (RX_WAIT_SOF) does NOT
+ * count against this. */
+#define PROTO_FRAME_TIMEOUT_MS   1000U   /* TODO: set the real timeout value */
 
 /* ------------------------------------------------------------------------- */
 /* RX frame assembler (byte-at-a-time state machine)                         */
@@ -39,6 +46,7 @@ static uint16_t   rx_len;
 static uint16_t   rx_idx;        /* payload bytes received so far */
 static uint8_t    rx_payload[PROTO_MAX_PAYLOAD];
 static uint16_t   rx_crc;        /* received CRC */
+static uint32_t   rx_last_ms;    /* tick of the last byte while mid-frame */
 
 static void rx_reset(void)
 {
@@ -198,5 +206,22 @@ void Protocol_Process(void)
     for (uint16_t i = 0U; i < n; i++)
     {
         feed_byte(buf[i]);
+        /* Each byte that leaves us mid-frame refreshes the stall timer. */
+        if (rx_state != RX_WAIT_SOF)
+        {
+            rx_last_ms = HAL_GetTick();
+        }
+    }
+
+    /* Mid-transfer timeout: a frame started but stalled before completing.
+     * Drop the connection and discard the partial frame. Idle time while
+     * waiting for a new SOF does not arm this. */
+    if (rx_state != RX_WAIT_SOF)
+    {
+        if ((HAL_GetTick() - rx_last_ms) >= PROTO_FRAME_TIMEOUT_MS)
+        {
+            Transport_Reset();
+            rx_reset();
+        }
     }
 }

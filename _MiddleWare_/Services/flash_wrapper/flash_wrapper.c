@@ -23,8 +23,8 @@ extern w25qxx_t w25qxx;
 
 void FW_Init(void)
 {
-    /* The W25Qxx driver is initialized in main() via W25qxx_Init().
-     * Nothing extra to do here yet; kept as a seam for future setup. */
+    /* Bring up the W25Qxx flash on SPI3 (CS = FLS_CS / PA15). The W5500
+     * Ethernet controller has its own bus (SPI1), so there is no contention. */
     W25qxx_Init(&hspi3, FLS_CS_GPIO_Port, FLS_CS_Pin);
 }
 
