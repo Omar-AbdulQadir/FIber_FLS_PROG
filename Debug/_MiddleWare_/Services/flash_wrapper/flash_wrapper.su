@@ -1,9 +1,0 @@
-../_MiddleWare_/Services/flash_wrapper/flash_wrapper.c:24:6:FW_Init	8	static
-../_MiddleWare_/Services/flash_wrapper/flash_wrapper.c:31:10:FW_CapacityBytes	4	static
-../_MiddleWare_/Services/flash_wrapper/flash_wrapper.c:41:6:FW_ReadChipId	24	static
-../_MiddleWare_/Services/flash_wrapper/flash_wrapper.c:57:13:fw_range_ok	24	static
-../_MiddleWare_/Services/flash_wrapper/flash_wrapper.c:71:13:FW_WriteData	48	static
-../_MiddleWare_/Services/flash_wrapper/flash_wrapper.c:103:13:FW_ReadData	24	static
-../_MiddleWare_/Services/flash_wrapper/flash_wrapper.c:118:13:FW_Erase	16	static
-../_MiddleWare_/Services/flash_wrapper/flash_wrapper.c:147:10:FW_Crc16	16	static
-../_MiddleWare_/Services/flash_wrapper/flash_wrapper.c:156:10:FW_ComputeChipCrc16	56	static

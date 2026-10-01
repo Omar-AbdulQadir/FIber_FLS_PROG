@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FLS Jig Packet Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#f3f5f6; --surface:#ffffff; --hw:#e6ebee; --ink:#18212a; --muted:#5a6772;
+  --line:#cfd7dd; --faint:#e2e7eb;
+  --req:#0b7480; --req-soft:#dff1f2;
+  --resp:#a85a07; --resp-soft:#fbeedd;
+  --bad:#b3261e;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#10161b; --surface:#182129; --hw:#202c35; --ink:#e3e9ee; --muted:#97a5b0;
+    --line:#33424e; --faint:#24313b;
+    --req:#46c2cc; --req-soft:#123238;
+    --resp:#f0a14a; --resp-soft:#3a2810;
+    --bad:#f2847b;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#10161b; --surface:#182129; --hw:#202c35; --ink:#e3e9ee; --muted:#97a5b0;
+  --line:#33424e; --faint:#24313b;
+  --req:#46c2cc; --req-soft:#123238;
+  --resp:#f0a14a; --resp-soft:#3a2810;
+  --bad:#f2847b;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;padding:0 16px}
+.wrap{max-width:980px;margin:0 auto;padding-block:40px 64px;display:flex;flex-direction:column;gap:44px}
+header{display:flex;flex-direction:column;gap:10px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:clamp(28px,4.4vw,40px);line-height:1.1;margin:0;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+h2{font-size:21px;margin:0;font-weight:600;text-wrap:balance}
+p{margin:0;max-width:68ch}
+.lede{color:var(--muted);font-size:16px}
+code,.m{font-family:var(--mono);font-size:.92em}
+section{display:flex;flex-direction:column;gap:14px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:8px}
+.sw{width:22px;height:3px;border-radius:2px;display:inline-block}
+.sw.req{background:var(--req)} .sw.resp{background:var(--resp)}
+.sw.hw{width:14px;height:14px;background:var(--hw);border:1px solid var(--line)}
+.sw.drv{width:14px;height:14px;background:var(--surface);border:1px dashed var(--muted)}
+
+figure{margin:0;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:18px 18px 14px}
+figcaption{font-size:13.5px;color:var(--muted);margin-top:10px;max-width:80ch}
+.scroll{overflow-x:auto}
+.scroll svg{display:block;width:100%;height:auto}
+.min720{min-width:720px} .min640{min-width:640px}
+
+/* SVG theming */
+.dia text{font-family:var(--mono);font-size:11.5px;fill:var(--ink)}
+.dia .t{font-family:var(--sans);font-size:14px;font-weight:600}
+.dia .mut{fill:var(--muted)}
+.dia .tag{font-size:10.5px;fill:var(--muted);letter-spacing:.04em}
+.dia .rq{fill:var(--req)} .dia .rs{fill:var(--resp)}
+.dia .bx{fill:var(--surface);stroke:var(--line);stroke-width:1.2}
+.dia .bx.hw{fill:var(--hw)}
+.dia .bx.drv{stroke:var(--muted);stroke-dasharray:5 4}
+.dia .st{fill:var(--surface);stroke:var(--ink);stroke-width:1.2}
+.dia .ar-rq{stroke:var(--req);stroke-width:2;fill:none}
+.dia .ar-rs{stroke:var(--resp);stroke-width:2;fill:none}
+.dia .ar{stroke:var(--ink);stroke-width:1.3;fill:none}
+.dia .ar-bad{stroke:var(--bad);stroke-width:1.3;fill:none;stroke-dasharray:5 3}
+.dia .dash{stroke:var(--muted);stroke-width:1.2;fill:none;stroke-dasharray:4 4}
+.dia .life{stroke:var(--line);stroke-width:1.2;stroke-dasharray:3 4}
+.dia .rule{stroke:var(--faint);stroke-width:1}
+.dia .loop{fill:none;stroke:var(--muted);stroke-width:1}
+.dia .bgfill{fill:var(--surface)}
+.dia .f-rq{fill:var(--req)} .dia .f-rs{fill:var(--resp)} .dia .f-ink{fill:var(--ink)} .dia .f-bad{fill:var(--bad)} .dia .f-mut{fill:var(--muted)}
+.dia .bad{fill:var(--bad)}
+
+/* Byte layouts */
+.frames{display:flex;flex-direction:column;gap:22px}
+.frame-row{display:flex;flex-direction:column;gap:6px}
+.frame-row h3{margin:0;font-size:14px;font-weight:600;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.frame-row h3 .m{color:var(--muted);font-weight:400;font-size:12.5px}
+.bytes{display:flex;min-width:640px}
+.b{border:1px solid var(--line);border-right:none;padding:7px 8px 6px;display:flex;flex-direction:column;gap:2px;flex:0 0 74px}
+.b:last-child{border-right:1px solid var(--line)}
+.b.wide{flex:1 1 200px}
+.b .n{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.b .v{font-family:var(--mono);font-size:13px;font-weight:500}
+.req-frame .b{background:var(--req-soft)}
+.resp-frame .b{background:var(--resp-soft)}
+.req-frame .b.sof .v{color:var(--req)} .resp-frame .b.sof .v{color:var(--resp)}
+.offs{display:flex;min-width:640px;font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.offs span{flex:0 0 74px;padding-left:8px}
+.offs span.wide{flex:1 1 200px}
+
+.examples{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.ex{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.ex h3{margin:0;font-size:14px;font-weight:600}
+.hex{font-family:var(--mono);font-size:13px;line-height:1.7;word-spacing:.1em;overflow-wrap:anywhere}
+.hex .dir{display:inline-block;width:2.2em;font-size:11px;color:var(--muted)}
+.hex .h-rq{color:var(--req);font-weight:600} .hex .h-rs{color:var(--resp);font-weight:600}
+.ex p{font-size:13px;color:var(--muted)}
+
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:720px}
+.tbl{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--faint);vertical-align:top}
+th{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500;background:var(--hw)}
+tr:last-child td{border-bottom:none}
+td.op{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--muted)}
+td .m{white-space:nowrap}
+.status{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px 18px;font-size:13.5px}
+.status div{display:flex;gap:10px}
+.status .m{color:var(--muted);font-variant-numeric:tabular-nums}
+
+.gotchas{display:flex;flex-direction:column;gap:0;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.gotchas li{list-style:none;padding:13px 16px;border-bottom:1px solid var(--faint);display:flex;flex-direction:column;gap:3px}
+.gotchas li:last-child{border-bottom:none}
+.gotchas ul{margin:0;padding:0}
+.gotchas strong{font-weight:600}
+.gotchas span{color:var(--muted);font-size:14px;max-width:80ch}
+.pill{display:inline-block;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;padding:1px 7px;border-radius:99px;border:1px solid currentColor;margin-right:8px;vertical-align:1px}
+.pill.client{color:var(--req)} .pill.fw{color:var(--resp)}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">FIber_FLS_PROG · STM32F401RC · branch ETH-with-multi-devices</div>
+  <h1>FLS Jig Packet Flow</h1>
+  <p class="lede">How one request travels from the PC over Ethernet, down through the firmware layers to the W25Q16 flash, and how the reply comes back up. Everything below is taken from the current code in <code>_MiddleWare_/Services/</code>.</p>
+</header>
+
+<!-- 1. STACK -->
+<section>
+  <h2>The stack, top to bottom</h2>
+  <div class="legend">
+    <span><i class="sw req"></i>Request path (down)</span>
+    <span><i class="sw resp"></i>Response path (up)</span>
+    <span><i class="sw hw"></i>Hardware</span>
+    <span><i class="sw drv"></i>Third-party driver, do not edit</span>
+  </div>
+  <figure>
+    <div class="scroll">
+    <svg class="dia min720" viewBox="0 0 860 840" role="img" aria-label="Layer stack: a request goes from the PC client over TCP to the W5500, over SPI1 into transport, protocol, command, flash wrapper and the W25Qxx driver, then over SPI2 to the W25Q16. The response climbs back up the same layers, all inside one Protocol_Process call.">
+      <defs>
+        <marker id="m-rq" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="f-rq"/></marker>
+        <marker id="m-rs" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="f-rs"/></marker>
+      </defs>
+
+      <text x="250" y="24" text-anchor="middle" class="rq" style="font-weight:600">REQUEST ↓</text>
+      <text x="590" y="24" text-anchor="middle" class="rs" style="font-weight:600">RESPONSE ↑</text>
+
+      <!-- boxes -->
+      <rect x="200" y="40" width="440" height="54" rx="6" class="bx hw"/>
+      <text x="216" y="62" class="t">PC client app</text><text x="624" y="62" text-anchor="end" class="tag">HOST</text>
+      <text x="216" y="81" class="mut">192.168.1.100–107 : 5000 · waits for every ACK</text>
+
+      <rect x="200" y="138" width="440" height="54" rx="6" class="bx hw"/>
+      <text x="216" y="160" class="t">W5500 Ethernet controller</text><text x="624" y="160" text-anchor="end" class="tag">CHIP</text>
+      <text x="216" y="179" class="mut">socket 0 · TCP server · 2 KB RX + 2 KB TX</text>
+
+      <rect x="200" y="256" width="440" height="54" rx="6" class="bx"/>
+      <text x="216" y="278" class="t">Transport</text><text x="624" y="278" text-anchor="end" class="tag">transport/</text>
+      <text x="216" y="297" class="mut">socket state machine · RX into 256 B ring</text>
+
+      <rect x="200" y="354" width="440" height="54" rx="6" class="bx"/>
+      <text x="216" y="376" class="t">Protocol</text><text x="624" y="376" text-anchor="end" class="tag">protocol/</text>
+      <text x="216" y="395" class="mut">byte-by-byte frame FSM · CRC check · reply builder</text>
+
+      <rect x="200" y="452" width="440" height="54" rx="6" class="bx"/>
+      <text x="216" y="474" class="t">Command</text><text x="624" y="474" text-anchor="end" class="tag">command/</text>
+      <text x="216" y="493" class="mut">dispatch table → handler · stream session state</text>
+
+      <rect x="200" y="550" width="440" height="54" rx="6" class="bx"/>
+      <text x="216" y="572" class="t">Flash wrapper</text><text x="624" y="572" text-anchor="end" class="tag">flash_wrapper/</text>
+      <text x="216" y="591" class="mut">range check · max 32 B · split at 256 B pages</text>
+
+      <rect x="200" y="648" width="440" height="54" rx="6" class="bx drv"/>
+      <text x="216" y="670" class="t">W25Qxx driver</text><text x="624" y="670" text-anchor="end" class="tag">FLS/ · DO NOT EDIT</text>
+      <text x="216" y="689" class="mut">W25qxx_Spi(): CS low → TransmitReceive → CS high</text>
+
+      <rect x="200" y="766" width="440" height="54" rx="6" class="bx hw"/>
+      <text x="216" y="788" class="t">W25Q16 serial flash</text><text x="624" y="788" text-anchor="end" class="tag">CHIP</text>
+      <text x="216" y="807" class="mut">2 MB · 256 B pages · 4 KB sectors · 64 KB blocks</text>
+
+      <!-- gap 0-1 -->
+      <line x1="250" y1="98" x2="250" y2="134" class="ar-rq" marker-end="url(#m-rq)"/>
+      <line x1="590" y1="134" x2="590" y2="98" class="ar-rs" marker-end="url(#m-rs)"/>
+      <text x="238" y="120" text-anchor="end" class="rq">request frame</text>
+      <text x="602" y="120" class="rs">response frame</text>
+
+      <!-- gap 1-2 (SPI1) -->
+      <line x1="250" y1="196" x2="250" y2="252" class="ar-rq" marker-end="url(#m-rq)"/>
+      <line x1="590" y1="252" x2="590" y2="196" class="ar-rs" marker-end="url(#m-rs)"/>
+      <text x="238" y="228" text-anchor="end" class="rq">W5500_recv ≤64 B</text>
+      <text x="602" y="228" class="rs">W5500_send</text>
+      <text x="420" y="228" text-anchor="middle" class="mut">SPI1 · 40 MHz · CS PA4</text>
+
+      <!-- gap 2-3 -->
+      <line x1="250" y1="314" x2="250" y2="350" class="ar-rq" marker-end="url(#m-rq)"/>
+      <line x1="590" y1="350" x2="590" y2="314" class="ar-rs" marker-end="url(#m-rs)"/>
+      <text x="238" y="336" text-anchor="end" class="rq">Transport_Read ≤42 B</text>
+      <text x="602" y="336" class="rs">Transport_Write(frame)</text>
+
+      <!-- gap 3-4 -->
+      <line x1="250" y1="412" x2="250" y2="448" class="ar-rq" marker-end="url(#m-rq)"/>
+      <line x1="590" y1="448" x2="590" y2="412" class="ar-rs" marker-end="url(#m-rs)"/>
+      <text x="238" y="434" text-anchor="end" class="rq">proto_request_t</text>
+      <text x="602" y="434" class="rs">Protocol_SendResponse()</text>
+
+      <!-- gap 4-5 -->
+      <line x1="250" y1="510" x2="250" y2="546" class="ar-rq" marker-end="url(#m-rq)"/>
+      <line x1="590" y1="546" x2="590" y2="510" class="ar-rs" marker-end="url(#m-rs)"/>
+      <text x="238" y="532" text-anchor="end" class="rq">FW_Write/Read/Erase</text>
+      <text x="602" y="532" class="rs">fw_status_t + data</text>
+
+      <!-- gap 5-6 -->
+      <line x1="250" y1="608" x2="250" y2="644" class="ar-rq" marker-end="url(#m-rq)"/>
+      <line x1="590" y1="644" x2="590" y2="608" class="ar-rs" marker-end="url(#m-rs)"/>
+      <text x="238" y="630" text-anchor="end" class="rq">W25qxx_WriteBytes</text>
+      <text x="602" y="630" class="rs">read bytes</text>
+
+      <!-- gap 6-7 (SPI2) -->
+      <line x1="250" y1="706" x2="250" y2="762" class="ar-rq" marker-end="url(#m-rq)"/>
+      <line x1="590" y1="762" x2="590" y2="706" class="ar-rs" marker-end="url(#m-rs)"/>
+      <text x="238" y="738" text-anchor="end" class="rq">opcode + addr + data</text>
+      <text x="602" y="738" class="rs">MISO bytes</text>
+      <text x="420" y="738" text-anchor="middle" class="mut">SPI2 · 5 MHz · CS PB12</text>
+
+      <!-- loop bracket -->
+      <path d="M812 256 H826 V702 H812" class="dash"/>
+      <text x="846" y="479" text-anchor="middle" class="mut" transform="rotate(-90 846 479)">one Protocol_Process() call</text>
+    </svg>
+    </div>
+    <figcaption>Firmware is single-threaded with no interrupts in the data path. <code>main()</code> calls <code>Protocol_Process()</code> in a loop, and the whole round trip inside the dashed bracket (read bytes, finish the frame, run the handler, touch the flash, send the reply) happens within that one call. A slow flash operation such as a chip erase pauses the loop until it finishes.</figcaption>
+  </figure>
+</section>
+
+<!-- 2. FRAMES -->
+<section>
+  <h2>What's on the wire</h2>
+  <p>Every multi-byte field is big-endian (MSB first). The first byte tells you the direction: <code style="color:var(--req)">A5</code> is a request, <code style="color:var(--resp)">5A</code> is a response.</p>
+  <figure>
+    <div class="frames scroll">
+      <div class="frame-row req-frame">
+        <h3>Request <span class="m">PC → jig · 7 + LEN bytes · LEN ≤ 35</span></h3>
+        <div class="bytes">
+          <div class="b sof"><span class="n">SOF</span><span class="v">A5</span></div>
+          <div class="b"><span class="n">Chip</span><span class="v">00</span></div>
+          <div class="b"><span class="n">Cmd</span><span class="v">01–08</span></div>
+          <div class="b"><span class="n">Len hi</span><span class="v">00</span></div>
+          <div class="b"><span class="n">Len lo</span><span class="v">nn</span></div>
+          <div class="b wide"><span class="n">Payload</span><span class="v">0–35 bytes</span></div>
+          <div class="b"><span class="n">CRC hi</span><span class="v">00</span></div>
+          <div class="b"><span class="n">CRC lo</span><span class="v">00</span></div>
+        </div>
+        <div class="offs"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span class="wide">5 …</span><span>5+LEN</span><span>6+LEN</span></div>
+      </div>
+      <div class="frame-row resp-frame">
+        <h3>Response <span class="m">jig → PC · 8 + LEN bytes · LEN ≤ 32</span></h3>
+        <div class="bytes">
+          <div class="b sof"><span class="n">SOF</span><span class="v">5A</span></div>
+          <div class="b"><span class="n">Chip</span><span class="v">echo</span></div>
+          <div class="b"><span class="n">Cmd</span><span class="v">echo</span></div>
+          <div class="b"><span class="n">Status</span><span class="v">00–08</span></div>
+          <div class="b"><span class="n">Len hi</span><span class="v">00</span></div>
+          <div class="b"><span class="n">Len lo</span><span class="v">nn</span></div>
+          <div class="b wide"><span class="n">Resp data</span><span class="v">0–32 bytes</span></div>
+          <div class="b"><span class="n">CRC hi</span><span class="v">00</span></div>
+          <div class="b"><span class="n">CRC lo</span><span class="v">00</span></div>
+        </div>
+        <div class="offs"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span class="wide">6 …</span><span>6+LEN</span><span>7+LEN</span></div>
+      </div>
+    </div>
+    <figcaption>The largest request is <code>WRITE_DATA</code>: 3 address bytes + 32 data bytes = 35 bytes of payload, 42 bytes in total. The CRC is a stub today: <code>FW_Crc16()</code> always returns <code>0x0000</code>, so the client must send <code>00 00</code> and every reply carries <code>00 00</code>.</figcaption>
+  </figure>
+
+  <div class="examples">
+    <div class="ex">
+      <h3>Erase the whole chip</h3>
+      <div class="hex"><span class="dir">PC</span><span class="h-rq">A5</span> 00 04 00 04 02 00 00 00 00 00</div>
+      <div class="hex"><span class="dir">jig</span><span class="h-rs">5A</span> 00 04 00 00 00 00 00</div>
+      <p>Payload <code>02 000000</code> = scope chip, address ignored. Status <code>00</code> = OK, no data.</p>
+    </div>
+    <div class="ex">
+      <h3>Stream 4 bytes, first chunk</h3>
+      <div class="hex"><span class="dir">PC</span><span class="h-rq">A5</span> 00 07 00 04 DE AD BE EF 00 00</div>
+      <div class="hex"><span class="dir">jig</span><span class="h-rs">5A</span> 00 07 00 00 03 00 00 04 00 00</div>
+      <p>The reply's 3-byte data is <code>bytes_done</code> = 4. The client uses it to track progress.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 3. RX FSM -->
+<section>
+  <h2>How the jig assembles a request</h2>
+  <p>TCP delivers a byte stream, not packets, so a frame can arrive split over several reads or merged with the next one. The protocol layer feeds every byte through this state machine and only acts when the last CRC byte lands.</p>
+  <figure>
+    <div class="scroll">
+    <svg class="dia min720" viewBox="0 0 904 250" role="img" aria-label="Receive state machine: WAIT_SOF, CHIP, CMD, LEN_HI, LEN_LO, PAYLOAD, CRC_HI, CRC_LO, then back to WAIT_SOF after dispatching. LEN over 35 sends ST_ERR_LEN and resyncs. LEN of zero skips the payload. A 1 second stall mid-frame resets the connection.">
+      <defs>
+        <marker id="m-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="f-ink"/></marker>
+        <marker id="m-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="f-bad"/></marker>
+        <marker id="m-mut" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="f-mut"/></marker>
+      </defs>
+
+      <!-- timeout bracket -->
+      <path d="M130 38 V30 H882 V38" class="dash"/>
+      <text x="506" y="22" text-anchor="middle" class="mut">no byte for 1000 ms in any of these states → Transport_Reset(), drop partial frame</text>
+
+      <!-- ERR_LEN return -->
+      <path d="M506 90 V62 H66 V86" class="ar-bad" marker-end="url(#m-bad)"/>
+      <text x="286" y="56" text-anchor="middle" class="bad">LEN &gt; 35 → reply ST_ERR_LEN</text>
+
+      <!-- states -->
+      <rect x="20"  y="90" width="92" height="46" rx="5" class="st"/><text x="66"  y="109" text-anchor="middle" style="font-weight:600">WAIT_SOF</text><text x="66"  y="126" text-anchor="middle" class="mut">want A5</text>
+      <rect x="130" y="90" width="92" height="46" rx="5" class="st"/><text x="176" y="109" text-anchor="middle" style="font-weight:600">CHIP</text><text x="176" y="126" text-anchor="middle" class="mut">chip id</text>
+      <rect x="240" y="90" width="92" height="46" rx="5" class="st"/><text x="286" y="109" text-anchor="middle" style="font-weight:600">CMD</text><text x="286" y="126" text-anchor="middle" class="mut">opcode</text>
+      <rect x="350" y="90" width="92" height="46" rx="5" class="st"/><text x="396" y="109" text-anchor="middle" style="font-weight:600">LEN_HI</text><text x="396" y="126" text-anchor="middle" class="mut">len[15:8]</text>
+      <rect x="460" y="90" width="92" height="46" rx="5" class="st"/><text x="506" y="109" text-anchor="middle" style="font-weight:600">LEN_LO</text><text x="506" y="126" text-anchor="middle" class="mut">len[7:0]</text>
+      <rect x="570" y="90" width="92" height="46" rx="5" class="st"/><text x="616" y="109" text-anchor="middle" style="font-weight:600">PAYLOAD</text><text x="616" y="126" text-anchor="middle" class="mut">LEN bytes</text>
+      <rect x="680" y="90" width="92" height="46" rx="5" class="st"/><text x="726" y="109" text-anchor="middle" style="font-weight:600">CRC_HI</text><text x="726" y="126" text-anchor="middle" class="mut">crc[15:8]</text>
+      <rect x="790" y="90" width="92" height="46" rx="5" class="st"/><text x="836" y="109" text-anchor="middle" style="font-weight:600">CRC_LO</text><text x="836" y="126" text-anchor="middle" class="mut">crc[7:0]</text>
+
+      <!-- forward edges -->
+      <line x1="112" y1="113" x2="128" y2="113" class="ar" marker-end="url(#m-ink)"/>
+      <line x1="222" y1="113" x2="238" y2="113" class="ar" marker-end="url(#m-ink)"/>
+      <line x1="332" y1="113" x2="348" y2="113" class="ar" marker-end="url(#m-ink)"/>
+      <line x1="442" y1="113" x2="458" y2="113" class="ar" marker-end="url(#m-ink)"/>
+      <line x1="552" y1="113" x2="568" y2="113" class="ar" marker-end="url(#m-ink)"/>
+      <line x1="662" y1="113" x2="678" y2="113" class="ar" marker-end="url(#m-ink)"/>
+      <line x1="772" y1="113" x2="788" y2="113" class="ar" marker-end="url(#m-ink)"/>
+
+      <!-- payload self loop -->
+      <path d="M600 90 C600 68, 632 68, 632 88" class="ar" marker-end="url(#m-ink)"/>
+
+      <!-- LEN = 0 skip -->
+      <path d="M526 136 V168 H706 V140" class="ar" marker-end="url(#m-ink)"/>
+      <text x="616" y="162" text-anchor="middle" class="mut">LEN = 0</text>
+
+      <!-- complete → back to WAIT_SOF -->
+      <path d="M836 136 V206 H66 V140" class="ar" marker-end="url(#m-ink)"/>
+      <text x="451" y="228" text-anchor="middle">frame complete → CRC ok: Command_Dispatch() · CRC bad: reply ST_ERR_CRC</text>
+    </svg>
+    </div>
+    <figcaption>While waiting for <code>A5</code>, stray bytes are discarded and no timer runs, so an idle connection never times out. The 1-second stall timer only arms once a frame has started. Its value is <code>PROTO_FRAME_TIMEOUT_MS</code>, still marked TODO in <code>protocol.c</code>.</figcaption>
+  </figure>
+</section>
+
+<!-- 4. SEQUENCE -->
+<section>
+  <h2>A full programming session</h2>
+  <p>The protocol is lock-step: the client sends one frame, then waits for its reply before sending the next. Here is the erase, program and verify sequence the PC tool will run.</p>
+  <figure>
+    <div class="scroll">
+    <svg class="dia min720" viewBox="0 0 860 545" role="img" aria-label="Sequence: client sends ERASE chip, firmware issues chip erase and waits for busy, then ACKs. Client sends WRITE_STREAM_START, gets ACK, then loops WRITE_STREAM_DATA with a page program and an ACK carrying bytes_done. Finally VERIFY makes the firmware read the whole chip and answer OK or ERR_VERIFY.">
+      <defs>
+        <marker id="s-rq" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="f-rq"/></marker>
+        <marker id="s-rs" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="f-rs"/></marker>
+        <marker id="s-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="f-ink"/></marker>
+      </defs>
+
+      <!-- lifeline heads -->
+      <rect x="40" y="8" width="140" height="34" rx="5" class="bx hw"/><text x="110" y="30" text-anchor="middle" class="t">PC client</text>
+      <rect x="380" y="8" width="140" height="34" rx="5" class="bx"/><text x="450" y="30" text-anchor="middle" class="t">Jig firmware</text>
+      <rect x="690" y="8" width="140" height="34" rx="5" class="bx hw"/><text x="760" y="30" text-anchor="middle" class="t">W25Q16</text>
+      <line x1="110" y1="42" x2="110" y2="538" class="life"/>
+      <line x1="450" y1="42" x2="450" y2="538" class="life"/>
+      <line x1="760" y1="42" x2="760" y2="538" class="life"/>
+
+      <!-- phase 1 -->
+      <line x1="0" y1="60" x2="860" y2="60" class="rule"/>
+      <text x="8" y="78" class="tag">1 · ERASE</text>
+      <line x1="110" y1="100" x2="446" y2="100" class="ar-rq" marker-end="url(#s-rq)"/>
+      <text x="280" y="93" text-anchor="middle" class="rq">ERASE · scope 02 (chip)</text>
+      <line x1="450" y1="130" x2="756" y2="130" class="ar" marker-end="url(#s-ink)"/>
+      <text x="605" y="123" text-anchor="middle">Chip Erase (C7h)</text>
+      <line x1="760" y1="160" x2="454" y2="160" class="dash" marker-end="url(#s-ink)"/>
+      <text x="605" y="153" text-anchor="middle" class="mut">poll BUSY until done · loop blocked</text>
+      <line x1="450" y1="192" x2="114" y2="192" class="ar-rs" marker-end="url(#s-rs)"/>
+      <text x="280" y="185" text-anchor="middle" class="rs">ACK · ST_OK</text>
+
+      <!-- phase 2 -->
+      <line x1="0" y1="214" x2="860" y2="214" class="rule"/>
+      <text x="8" y="232" class="tag">2 · PROGRAM</text>
+      <line x1="110" y1="256" x2="446" y2="256" class="ar-rq" marker-end="url(#s-rq)"/>
+      <text x="280" y="249" text-anchor="middle" class="rq">WRITE_STREAM_START · addr, total N</text>
+      <line x1="450" y1="286" x2="114" y2="286" class="ar-rs" marker-end="url(#s-rs)"/>
+      <text x="280" y="279" text-anchor="middle" class="rs">ACK · session = WRITE</text>
+
+      <rect x="30" y="302" width="810" height="112" rx="4" class="loop"/>
+      <rect x="31" y="303" width="122" height="20" class="bgfill"/>
+      <text x="40" y="317" class="mut">loop ⌈N / 32⌉ ×</text>
+      <line x1="110" y1="342" x2="446" y2="342" class="ar-rq" marker-end="url(#s-rq)"/>
+      <text x="280" y="335" text-anchor="middle" class="rq">WRITE_STREAM_DATA · 1–32 B</text>
+      <line x1="450" y1="370" x2="756" y2="370" class="ar" marker-end="url(#s-ink)"/>
+      <text x="605" y="363" text-anchor="middle">Page Program (02h) · split at page edge</text>
+      <line x1="450" y1="400" x2="114" y2="400" class="ar-rs" marker-end="url(#s-rs)"/>
+      <text x="280" y="393" text-anchor="middle" class="rs">ACK · bytes_done (3 B)</text>
+
+      <!-- phase 3 -->
+      <line x1="0" y1="432" x2="860" y2="432" class="rule"/>
+      <text x="8" y="450" class="tag">3 · VERIFY</text>
+      <line x1="110" y1="470" x2="446" y2="470" class="ar-rq" marker-end="url(#s-rq)"/>
+      <text x="280" y="463" text-anchor="middle" class="rq">VERIFY · expected CRC-16</text>
+      <line x1="450" y1="498" x2="756" y2="498" class="ar" marker-end="url(#s-ink)"/>
+      <text x="605" y="491" text-anchor="middle">read all 2 MB, 32 B per read</text>
+      <line x1="450" y1="528" x2="114" y2="528" class="ar-rs" marker-end="url(#s-rs)"/>
+      <text x="280" y="521" text-anchor="middle" class="rs">ST_OK or ST_ERR_VERIFY</text>
+    </svg>
+    </div>
+    <figcaption>A full 2 MB image is 65,536 <code>WRITE_STREAM_DATA</code> round trips, because each frame carries at most 32 bytes. The stream does not erase anything itself, so the target range must be erased first. Reading back works the same way: <code>READ_START</code>, then one <code>READ_DATA</code> per 32-byte chunk.</figcaption>
+  </figure>
+</section>
+
+<!-- 5. SOCKET -->
+<section>
+  <h2>Connection lifecycle</h2>
+  <p><code>Transport_Poll()</code> checks the W5500 socket state on every loop pass and moves it forward one step. The socket is non-blocking, so no call ever waits inside the WIZnet library.</p>
+  <figure>
+    <div class="scroll">
+    <svg class="dia min720" viewBox="0 0 880 190" role="img" aria-label="Socket states: CLOSED to INIT via socket and non-blocking mode, INIT to LISTEN via listen, LISTEN to ESTABLISHED when a client connects, ESTABLISHED to CLOSE_WAIT when the peer closes, then back to CLOSED by disconnect and close. A mid-frame stall also returns ESTABLISHED to CLOSED through Transport_Reset.">
+      <defs>
+        <marker id="c-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="f-ink"/></marker>
+        <marker id="c-bad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="f-bad"/></marker>
+      </defs>
+      <rect x="20"  y="60" width="130" height="44" rx="5" class="st"/><text x="85"  y="80" text-anchor="middle" style="font-weight:600">CLOSED</text><text x="85" y="96" text-anchor="middle" class="mut">boot / after close</text>
+      <rect x="190" y="60" width="130" height="44" rx="5" class="st"/><text x="255" y="80" text-anchor="middle" style="font-weight:600">INIT</text><text x="255" y="96" text-anchor="middle" class="mut">TCP, port 5000</text>
+      <rect x="360" y="60" width="130" height="44" rx="5" class="st"/><text x="425" y="80" text-anchor="middle" style="font-weight:600">LISTEN</text><text x="425" y="96" text-anchor="middle" class="mut">waiting for PC</text>
+      <rect x="530" y="60" width="130" height="44" rx="5" class="st" style="stroke:var(--req);stroke-width:2"/><text x="595" y="80" text-anchor="middle" style="font-weight:600">ESTABLISHED</text><text x="595" y="96" text-anchor="middle" class="mut">drain RX → ring</text>
+      <rect x="700" y="60" width="130" height="44" rx="5" class="st"/><text x="765" y="80" text-anchor="middle" style="font-weight:600">CLOSE_WAIT</text><text x="765" y="96" text-anchor="middle" class="mut">PC hung up</text>
+
+      <line x1="150" y1="82" x2="188" y2="82" class="ar" marker-end="url(#c-ink)"/>
+      <line x1="320" y1="82" x2="358" y2="82" class="ar" marker-end="url(#c-ink)"/>
+      <line x1="490" y1="82" x2="528" y2="82" class="ar" marker-end="url(#c-ink)"/>
+      <line x1="660" y1="82" x2="698" y2="82" class="ar" marker-end="url(#c-ink)"/>
+      <text x="170" y="44" text-anchor="middle" class="mut">socket() + NONBLOCK</text>
+      <text x="340" y="44" text-anchor="middle" class="mut">listen()</text>
+      <text x="510" y="44" text-anchor="middle" class="mut">PC connects</text>
+      <text x="680" y="44" text-anchor="middle" class="mut">PC closes</text>
+
+      <path d="M595 104 V132 H105 V108" class="ar-bad" marker-end="url(#c-bad)"/>
+      <text x="350" y="126" text-anchor="middle" class="bad">Transport_Reset() after a 1 s mid-frame stall</text>
+      <path d="M765 104 V156 H85 V108" class="ar" marker-end="url(#c-ink)"/>
+      <text x="425" y="176" text-anchor="middle">disconnect() + close() → reopens next pass</text>
+    </svg>
+    </div>
+    <figcaption>Only one PC can be connected at a time (socket 0). Each jig's IP is <code>192.168.1.(100 + IP_SEL)</code>, where IP_SEL is the 3-bit strap on PB5–PB7, so up to eight jigs can share one network.</figcaption>
+  </figure>
+</section>
+
+<!-- 6. COMMANDS -->
+<section>
+  <h2>Command reference</h2>
+  <div class="tbl">
+    <table>
+      <thead><tr><th>Cmd</th><th>Name</th><th>Request payload</th><th>Reply data</th><th>Behaviour</th></tr></thead>
+      <tbody>
+        <tr><td class="op">01</td><td><code>READ_ID</code></td><td>none</td><td>4 B</td><td>Returns placeholder <code>DE AD BE EF</code>, not the real JEDEC ID.</td></tr>
+        <tr><td class="op">02</td><td><code>READ_START</code></td><td><span class="m">addr(3) total(3)</span></td><td>none</td><td>Opens a read session. Range is checked against chip size.</td></tr>
+        <tr><td class="op">03</td><td><code>READ_DATA</code></td><td>none</td><td>≤ 32 B</td><td>Returns the next chunk. Session closes on the last chunk; one more <code>READ_DATA</code> gets <code>ERR_SEQ</code>.</td></tr>
+        <tr><td class="op">04</td><td><code>ERASE</code></td><td><span class="m">scope(1) addr(3)</span></td><td>none</td><td>Scope <code>00</code> = 4 KB sector, <code>01</code> = 64 KB block, <code>02</code> = whole chip. Blocks until done.</td></tr>
+        <tr><td class="op">05</td><td><code>WRITE_DATA</code></td><td><span class="m">addr(3) data(≤32)</span></td><td>none</td><td>One-shot write at any address. Page crossings are split for you.</td></tr>
+        <tr><td class="op">06</td><td><code>WRITE_STREAM_START</code></td><td><span class="m">addr(3) total(3)</span></td><td>none</td><td>Opens a write session. Starting a new session drops any open one.</td></tr>
+        <tr><td class="op">07</td><td><code>WRITE_STREAM_DATA</code></td><td><span class="m">data(1–32)</span></td><td>3 B</td><td>Writes at the session's next address. Reply is running <code>bytes_done</code>. Sending past <code>total</code> gets <code>ERR_LEN</code>.</td></tr>
+        <tr><td class="op">08</td><td><code>VERIFY</code></td><td><span class="m">crc16(2)</span></td><td>none</td><td>Reads the whole chip and compares CRCs. Stub CRC today, so expected must be <code>0000</code>.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="status">
+    <div><span class="m">00</span>OK</div>
+    <div><span class="m">01</span>ERR_CRC</div>
+    <div><span class="m">02</span>ERR_CMD (unknown opcode)</div>
+    <div><span class="m">03</span>ERR_LEN</div>
+    <div><span class="m">04</span>ERR_ADDR (out of range)</div>
+    <div><span class="m">05</span>ERR_SEQ (no session)</div>
+    <div><span class="m">06</span>ERR_BUSY (unused)</div>
+    <div><span class="m">07</span>ERR_FLASH</div>
+    <div><span class="m">08</span>ERR_VERIFY</div>
+  </div>
+</section>
+
+<!-- 7. GOTCHAS -->
+<section>
+  <h2>Things to know before bring-up</h2>
+  <div class="gotchas"><ul>
+    <li><strong><span class="pill client">CLIENT</span>Set a long timeout on ERASE replies</strong><span>A chip erase runs inside the handler, so the jig sends nothing until the flash clears BUSY. The W5500 keeps buffering incoming TCP meanwhile, and the 1 s stall timer is not armed because the frame already completed.</span></li>
+    <li><strong><span class="pill client">CLIENT</span>Count bytes; don't ask for more</strong><span>Read and write sessions close themselves when <code>bytes_done</code> reaches <code>total</code>. An extra <code>READ_DATA</code> or <code>WRITE_STREAM_DATA</code> after that returns <code>ERR_SEQ</code>.</span></li>
+    <li><strong><span class="pill fw">FIRMWARE</span>CRC is a stub with partial coverage</strong><span>Besides always returning <code>0x0000</code>, the request check in <code>handle_complete_frame()</code> only feeds CHIP, CMD and LEN-hi into the CRC. When the real CRC-16 lands, that buffer also needs LEN-lo and the payload.</span></li>
+    <li><strong><span class="pill fw">FIRMWARE</span>Failed sends are silent</strong><span><code>Protocol_SendResponse()</code> ignores the result of <code>Transport_Write()</code>. If the socket dropped, the reply is lost and the PC simply times out.</span></li>
+    <li><strong><span class="pill fw">FIRMWARE</span>The CHIP byte is echoed, not routed</strong><span>Any chip value is accepted and copied into the reply. Multi-chip selection is still deferred.</span></li>
+  </ul></div>
+</section>
+</div>
+</body>
+</html>

@@ -1,9 +1,0 @@
-../_MiddleWare_/Services/transport/transport.c:62:17:tp_rx_count	1
-../_MiddleWare_/Services/transport/transport.c:67:17:tp_rx_free	1
-../_MiddleWare_/Services/transport/transport.c:72:13:tp_rx_push	2
-../_MiddleWare_/Services/transport/transport.c:88:6:Transport_Init	2
-../_MiddleWare_/Services/transport/transport.c:142:6:Transport_Poll	12
-../_MiddleWare_/Services/transport/transport.c:200:6:Transport_Reset	2
-../_MiddleWare_/Services/transport/transport.c:217:10:Transport_Read	3
-../_MiddleWare_/Services/transport/transport.c:228:6:Transport_Write	3
-../_MiddleWare_/Services/transport/transport.c:238:6:Transport_RxAvailable	1
